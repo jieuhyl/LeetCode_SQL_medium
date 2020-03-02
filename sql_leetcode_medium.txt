@@ -1,0 +1,527 @@
+#====
+1308. Running Total for Different Genders
+SELECT gender, day, 
+       sum(score_points) over(partition by gender order by day) as total
+FROM Scores;
+
+
+#====
+1270. All People Report to the Given Manager
+select tmp.employee_id
+from
+(select a.*, b.manager_id em1, c.manager_id em2
+from employees a
+left join employees b
+on a.manager_id = b.employee_id
+left join employees c
+on b.manager_id = c.employee_id) as tmp
+where tmp.em2 = 1 and tmp.employee_id != 1;
+
+
+#====
+1285. Find the Start and End Number of Continuous Ranges
+SELECT min(log_id) as start_id, max(log_id) as end_id
+FROM
+(SELECT log_id, ROW_NUMBER() OVER(ORDER BY log_id) as num
+FROM Logs) a
+GROUP BY log_id - num
+
+
+#====
+1077. Project Employees III
+select tmp.project_id, tmp.employee_id
+from
+(select p.*, e.experience_years yr1
+    max(e.experience_years) over(partition by p.project_id) yr2
+from project as p
+left join employee as e
+on p.employee_id = e.employee_id) as tmp
+where tmp.yr1 = tmp.yr2;
+
+
+#====
+534. Game Play Analysis III
+select player_id, event_date,
+    sum(games_played) over(partition by player_id order by event_date) 'games_played_so_far'
+from activity;
+
+
+#====
+1126. Active Businesses
+SELECT e.business_id
+FROM Events e
+JOIN
+    (SELECT event_type, AVG(occurences) AS avg_occ
+     FROM Events
+     GROUP BY event_type) a
+ON e.event_type = a.event_type
+WHERE e.occurences > a.avg_occ
+GROUP BY e.business_id 
+HAVING COUNT(e.business_id) > 1;
+
+
+#====
+1204. Last Person to Fit in the Elevator
+select top 1 sub.person_name
+from
+(select person_name,
+SUM(weight) OVER (ORDER BY turn ASC) AS running_total
+from Queue) sub
+where sub.running_total <= 1000
+order by sub.running_total DESC
+
+
+#====
+1045. Customers Who Bought All Products
+select customer_id
+from customer
+group by customer_id
+having sum(distinct product_key) = (select sum(distinct product_key) from product);
+
+
+#====
+1193. Monthly Transactions I
+select left(trans_date, 7) as month, country,
+    count(*) as trans_count,
+    sum(case when state = 'approved' then 1 else 0 end) as approved_count,
+    sum(amount) as trans_total_amount, 
+    sum(case when state = 'approved' then amount else 0 end) as approved_total_amount
+from Transactions
+group by country, left(trans_date, 7);
+
+
+#====
+1112. Highest Grade For Each Student
+select tmp.stdent_id, tmp.course_id, tmp.grade
+from
+(
+select student_id , course_id , grade,
+dense_rank () over (partition by student_id order by grade desc,course_id asc) dr
+from Enrollments
+) as tmp
+where tmp.dr = 1
+order by tmp.student_id;
+
+with tmp as (select student_id, course_id,
+        max(grade) over(partition by student_id) 'grade'
+        from enrollment)
+    
+select student_id, min(course_id) 'course_id', max(grade) 'grade'
+from tmp
+group by student_id;
+
+
+#====
+1264. Page Recommendations
+with tmp1 as (
+select user_id, page_id
+from likes
+where page_id != (select distinct page_id from likes where user_id = 1))
+
+with tmp2 as(
+    select distinct user2_id 'id'
+from friendship
+where user1_id = 1
+
+union
+
+select distinct user1_id 'id'
+from friendship
+where user2_id = 1
+)
+
+select distinct tmp1.page_id
+from tmp1
+where tmp1.user_id in tmp2.id;
+
+
+SELECT DISTINCT page_id AS recommended_page
+FROM Likes
+WHERE user_id IN (
+    SELECT user2_id AS friend_id FROM Friendship WHERE user1_id = 1
+    UNION
+    SELECT user1_id AS friend_id FROM Friendship WHERE user2_id = 1) AND
+    page_id NOT IN (
+      SELECT page_id FROM Likes WHERE user_id = 1
+    )
+
+
+#====
+570. Managers with at Least 5 Direct Reports
+select Name 
+from employee
+where Id in 
+(select Manager_id,
+    count(Id) over(partition ManagerId) 'cnt'
+from employee
+where cnt >= 5);
+
+select name from employee 
+where Id in 
+(select managerId from Employee
+group by managerId
+having count(managerId)>=5);
+
+
+#====
+608. Tree Node
+select Id,
+  case 
+      when p_id is null then "Root"
+      when (p_id is not null and id in (select p_id from Tree)) then "Inner"
+      else "Leaf"
+  end as Type
+from tree
+
+
+#====
+1321. Restaurant Growth
+SELECT a.visited_on AS visited_on, SUM(b.day_sum) AS amount,
+       ROUND(AVG(b.day_sum), 2) AS average_amount
+FROM
+  (SELECT visited_on, SUM(amount) AS day_sum FROM Customer GROUP BY visited_on ) a,
+  (SELECT visited_on, SUM(amount) AS day_sum FROM Customer GROUP BY visited_on ) b
+WHERE DATEDIFF(a.visited_on, b.visited_on) BETWEEN 0 AND 6
+GROUP BY a.visited_on
+HAVING COUNT(b.visited_on) = 7
+
+
+#====
+1164. Product Price at a Given Date
+select distinct a.product_id, coalesce(b.new_price, 10) as price 
+from Products as a
+left join
+(select product_id, 
+    rank() over(partition by product_id order by change_date DESC) as xrank, 
+    new_price 
+    from Products
+    where change_date <= '2019-08-16') as b
+on a.product_id = b.product_id and b.xrank = 1
+order by 2 desc;
+
+
+#====
+1355. Activity Participants
+with cte as
+(Select count(*) as cnt, activity from Friends group by activity)
+
+Select activity from cte
+where cnt not in (Select max(cnt) from cte
+                    union all
+                  Select min(cnt) from cte
+);
+
+
+#====
+626. Exchange Seats
+SELECT (CASE 
+    WHEN mod(id, 2) != 0 and records != id THEN id + 1
+    WHEN mod(id, 2) != 0 and records = id THEN id
+    ELSE id - 1
+END) AS id, student
+FROM seat, (select count(*) as records from seat) as seat_records
+ORDER BY id asc;
+
+
+#====
+1158. Market Analysis I
+select buyer_id, join_date, 
+    sum(case when left(order_date, 4) = 2019 then 1 else 0 end) 'orders_in_2019'
+from orders as o
+join users as u
+on o.buyer_id = u.user_id
+#where left(order_date, 4) = 2019
+group by buyer_id;
+
+SELECT user_id AS buyer_id, join_date, COALESCE(COUNT(o.item_id),0) AS orders_in_2019
+FROM Users u
+LEFT JOIN Orders o ON u.user_id = o.buyer_id AND YEAR(order_date)=2019
+GROUP BY user_id
+ORDER BY user_id
+
+
+#====
+1174. Immediate Food Delivery II
+with tmp as (
+      select *, 
+            rank() over(partition by customer_id order by order_date asc) 'rnk'
+      from delivery)
+
+select round(100*sum(case when order_date = customer_pref_delivery_date then 1.0 else 0 end)/count(*), 2) 'immediate_percentage'
+from tmp
+where rnk = 1;
+
+
+#====
+612. Shortest Distance in a Plane
+select round(min(sqrt(pow(a.x-b.x,2)+pow(a.y-b.y,2))),2) shortest
+from point_2d a, point_2d b
+where (a.x,a.y)!=(b.x,b.y)
+
+
+#====
+1212. Team Scores in Football Tournament
+with tmp as(
+select host_team id,
+     case when host_goals > guest_goals then 3
+          when host_goals = guest_goals then 1
+          else 0 end 'pts'
+from matches
+union all
+select guest_team id,
+     case when host_goals < guest_goals then 3
+          when host_goals = guest_goals then 1
+          else 0 end 'pts'
+from matches)
+
+select t.*, coalesce(sum(tmp.pts), 0) 'num_points'
+from teams t
+left join tmp
+on t.team_id = tmp.id
+group by t.team_id, t.team_name
+order by 3 desc, 1 asc;
+
+
+#====
+1341. Movie Rating
+(
+select name 'results'
+from users u
+join movie_rating mr
+on u.user_id = mr.user_id
+#where left(created_at, 7) = '2020-02'
+group by u.user_id
+having count(*) = (select count(*) from movie_rating group by user_id order by 1 desc limit 1)
+order by 1
+limit 1)
+
+union
+(
+select title 'results'
+from movies m
+join movie_rating mr
+on m.movie_id = mr.movie_id
+where left(created_at, 7) = '2020-02'
+group by m.movie_id
+having avg(rating) = (select avg(rating) from movie_rating where left(created_at, 7) = '2020-02' group by movie_id order by 1 desc limit 1)
+order by 1
+limit 1)
+
+
+#====
+585. Investments in 2016
+select round(sum(tiv_2016), 2) tiv_2016
+from insurance
+where pid in (select pid from insurance group by lat, lon having count(*) = 1)
+ and pid not in (select pid from insurance group by tiv_2015 having count(*) = 1);
+
+
+#====
+1070. Product Sales Analysis III
+with tmp as (
+select product_id, year,
+    rank() over(partition by product_id order by year) rnk,
+    quantity, price
+from sales)
+
+select product_id, year 'first_year', quantity, price
+from tmp
+where rnk = 1;
+
+
+#====
+602. Friend Requests II: Who Has the Most Friends
+with tmp as(
+select requester_id id, count(accepter_id) cnt
+from request_accepted
+group by requester_id
+
+union all
+
+select accepter_id id, count(requester_id) cnt
+from request_accepted
+group by accepter_id)
+
+select top 1 id, sum(cnt) num
+from tmp
+group by id
+order by 2 desc;
+
+
+#====
+1149. Article Views II
+select distinct viewer_id as 'id'
+from Views
+group by viewer_id, view_date
+having count(distinct article_id) > 1
+order by viewer_id asc;
+
+
+#====
+580. Count Student Number in Departments
+select dept_name, coalesce(count(student_id), 0) student_number
+from student s
+right join department d
+on s.dept_id = d.dept_id
+group by dept_name
+order by 2 desc, 1 asc;
+
+
+#====
+550. Game Play Analysis IV
+select round(count(b.player_id)/count(a.player_id), 2) 'fraction'
+from (select player_id, min(event_date) 'first_login' from activity group by player_id) a
+left join activity b
+on a.player_id = b.player_id and a.first_login + 1 = b.event_date
+
+with tmp as (
+select a.player_id
+from (select player_id, min(event_date) 'first_login' from activity group by player_id) a,
+     activity b
+where datediff(day, a.first_login, b.event_date) = 1 and a.player_id = b.player_id)
+
+select round(1.0*count(distinct player_id)/(select count(distinct player_id) from activity), 2) 'fraction'
+from tmp;
+
+
+#====
+1107. New Users Daily Count
+select login_date, count(login_date) user_count
+from
+(select user_id, min(activity_date) login_date
+from traffic
+where activity = 'login'
+group by user_id) a
+where login_date between date_sub('2019-06-30', interval 90 day) and '2019-06-30'
+group by login_date;
+
+
+#====
+1205. Monthly Transactions II
+SELECT month, country, SUM(CASE WHEN state = "approved" THEN 1 ELSE 0 END) AS approved_count, SUM(CASE WHEN state = "approved" THEN amount ELSE 0 END) AS approved_amount, SUM(CASE WHEN state = "back" THEN 1 ELSE 0 END) AS chargeback_count, SUM(CASE WHEN state = "back" THEN amount ELSE 0 END) AS chargeback_amount
+FROM
+(
+    SELECT LEFT(chargebacks.trans_date, 7) AS month, country, "back" AS state, amount
+    FROM chargebacks
+    JOIN transactions ON chargebacks.trans_id = transactions.id
+    UNION ALL
+    SELECT LEFT(trans_date, 7) AS month, country, state, amount
+    FROM transactions
+    WHERE state = "approved"
+) s
+GROUP BY month, country
+
+
+#====
+1098. Unpopular Books
+select book_id, name
+from Books
+where datediff('2019-06-23', available_from) > 30 
+and book_id not in
+    (select book_id
+    from Orders
+    where datediff('2019-06-23', dispatch_date) <= 365
+    group by book_id
+    having sum(quantity) >= 10)
+
+
+#====
+178. Rank Scores
+select score,
+    dense_rank() over(order by score desc) 'Rank'
+from scores;
+
+
+#====
+574. Winning Candidate
+Select distinct c.Name As Name
+from Candidate c
+where c.id = (Select CandidateId 
+from Vote
+Group by CandidateId  
+order by count(CandidateId) desc
+limit 1);
+
+
+#====
+180. Consecutive Numbers
+select distinct a.num 'ConsecutiveNums'
+from logs a,
+     logs b,
+     logs c
+where a.id = b.id - 1 and a.id = c.id - 2 
+and a.num = b.num and a.num = c.num
+
+
+#====
+578. Get Highest Answer Rate Question
+SELECT question_id as survey_log
+FROM
+(SELECT question_id, 
+    SUM(case when action="show" THEN 1 ELSE 0 END) as num_show,       
+    SUM(case when action="answer" THEN 1 ELSE 0 END) as num_answer
+    FROM survey_log
+    GROUP BY question_id
+) as tbl
+ORDER BY (num_answer / num_show) DESC 
+LIMIT 1
+
+
+#====
+1132. Reported Posts II
+select round(sum(percent)/count(distinct action_date),2) as average_daily_percent
+from
+    (select a.action_date,
+    count(distinct r.post_id)/count(distinct a.post_id)*100 as percent
+    from actions a left join removals r
+    on a.post_id = r.post_id
+    where a.extra='spam'
+    group by 1) tmp;
+
+
+#====
+184. Department Highest Salary
+with tmp as (
+select *,
+    rank() over(partition by departmentid order by salary desc) 'rank'
+    from employee)
+    
+select d.name 'Department', tmp.name 'Employee', Salary
+from tmp
+inner join department d
+on tmp.departmentid = d.id
+where rank = 1;
+
+
+#====
+177. Nth Highest Salary
+CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT
+BEGIN
+DECLARE M INT;
+SET M=N-1;
+  RETURN (
+      # Write your MySQL query statement below.
+      SELECT DISTINCT Salary FROM Employee ORDER BY Salary DESC 
+      LIMIT 1 OFFSET M
+  );
+END
+
+
+#====
+614. Second Degree Follower
+select followee 'follower',
+    count(distinct follower) 'num'
+from follow f1
+where followee in (select follower from follow)
+group by followee
+order by 1 asc;
+
+1364. Number of Trusted Contacts of a Customer
+select i.invoice_id, c.customer_name, i.price ,
+count(cont.contact_email) contacts_cnt ,
+sum(if(cont.contact_name in (select distinct customer_name from customers),1,0)) trusted_contacts_cnt
+from invoices i
+join customers c on c.customer_id = i.user_id
+left join Contacts cont on cont.user_id = c.customer_id
+group by i.invoice_id
+order by i.invoice_id;
