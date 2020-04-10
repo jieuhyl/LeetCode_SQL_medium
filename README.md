@@ -1,1 +1,1 @@
-# LeetCode_SQL_medium
+# SQL(LeetCode and HackerRank)
