@@ -1,0 +1,214 @@
+#====
+The PADS
+select concat(Name,'(',left(Occupation,1),')') as Name
+from occupations
+Order by Name;
+select concat('There are a total of',' ',count(occupation),' ',lower(occupation),'s.') as total
+from occupations
+group by occupation
+order by total
+
+
+#====
+Occupations
+set @r1=0, @r2=0, @r3=0, @r4=0;
+select min(Doctor), min(Professor), min(Singer), min(Actor)
+from(
+  select case when Occupation='Doctor' then (@r1:=@r1+1)
+            when Occupation='Professor' then (@r2:=@r2+1)
+            when Occupation='Singer' then (@r3:=@r3+1)
+            when Occupation='Actor' then (@r4:=@r4+1) end as RowNumber,
+    case when Occupation='Doctor' then Name end as Doctor,
+    case when Occupation='Professor' then Name end as Professor,
+    case when Occupation='Singer' then Name end as Singer,
+    case when Occupation='Actor' then Name end as Actor
+  from OCCUPATIONS
+  order by Name
+) Temp
+group by RowNumber
+
+
+#====
+Binary Tree Nodes
+select N, 
+    case when P is NULL then 'Root' 
+         when N in (select P from BST) then 'Inner' 
+         else 'Leaf' end as Node 
+from BST 
+order by N
+
+
+#====
+New Companies
+select c.*, tmp1.a, tmp2.b, tmp3.c, tmp4.d
+from company c
+left join (select count(distinct lead_manager_code) a, l.company_code from Lead_Manager l group by l.company_code) as tmp1
+on c.company_code = tmp1.company_code
+left join (select count(distinct senior_manager_code) b, s.company_code from Senior_Manager s group by s.company_code) as tmp2
+on c.company_code = tmp2.company_code
+left join (select count(distinct manager_code) c, m.company_code from Manager m group by m.company_code) as tmp3
+on c.company_code = tmp3.company_code
+left join (select count(distinct employee_code) d, e.company_code from Employee e group by e.company_code) as tmp4
+on c.company_code = tmp4.company_code
+order by c.company_code;
+
+
+#====
+Weather Observation Station 18
+select 
+       round((abs(max(lat_n) - min(lat_n)) + abs(max(long_w) - min(long_w))),4)
+from station;
+
+
+#====
+Weather Observation Station 19
+select 
+    round(power((power(max(lat_n) - min(lat_n),2) + power(max(long_w) - min(long_w),2)),0.5),4)
+from station;
+
+
+#====
+Weather Observation Station 20
+Select round(S.LAT_N,4) median
+from station S 
+where (select count(Lat_N) from station where Lat_N < S.LAT_N ) = (select count(Lat_N) from station where Lat_N > S.LAT_N);
+
+select round(s1.lat_n, 4) 'median'
+from station s1, 
+     station s2
+group by s1.lat_n
+having sum(sign(1-sign(s2.lat_n - s1.lat_n))) = (count(*)+1)/2;
+
+
+#====
+The Report
+select case when grade < 8 then 'NULL' else name end,
+grade, marks
+from students s, grades g
+where marks between min_mark and max_mark
+order by grade desc, name
+
+
+#====
+Top Competitors
+select tmp.hacker_id, h.name
+from
+(select s.hacker_id, count(s.challenge_id) count_score,
+sum(case when s.score = d.score then 1 else 0 end) sum_score
+from submissions s
+left join challenges c 
+on s.challenge_id = c.challenge_id
+left join difficulty d
+on c.difficulty_level = d.difficulty_level
+group by s.hacker_id) as tmp
+left join hackers h
+on tmp.hacker_id = h.hacker_id
+where tmp.sum_score > 1
+order by tmp.sum_score desc, tmp.hacker_id asc
+
+
+#====
+Ollivander's Inventory
+select a.id, b.age, a.coins_needed, a.power from Wands a inner join Wands_Property b on a.code=b.code where b.is_evil!=1 and a.coins_needed=(select min(Wands.coins_needed) from Wands inner join Wands_Property on Wands.code=Wands_Property.code where Wands_Property.age=b.age and Wands.power=a.power) order by a.power desc,b.age desc
+
+
+#====
+Challenges
+SELECT h.hacker_id, 
+       h.name, 
+       COUNT(c.challenge_id) AS c_count
+FROM Hackers h
+JOIN Challenges c ON c.hacker_id = h.hacker_id
+GROUP BY h.hacker_id, h.name
+HAVING c_count = 
+    (SELECT COUNT(c2.challenge_id) AS c_max
+     FROM challenges as c2 
+     GROUP BY c2.hacker_id 
+     ORDER BY c_max DESC limit 1)
+OR c_count IN 
+    (SELECT DISTINCT c_compare AS c_unique
+     FROM (SELECT h2.hacker_id, 
+                  h2.name, 
+                  COUNT(challenge_id) AS c_compare
+           FROM Hackers h2
+           JOIN Challenges c ON c.hacker_id = h2.hacker_id
+           GROUP BY h2.hacker_id, h2.name) counts
+     GROUP BY c_compare
+     HAVING COUNT(c_compare) = 1)
+ORDER BY c_count DESC, h.hacker_id;
+
+
+#====
+Contest Leaderboard
+select tmp.hacker_id, h.name, sum(tmp.max_score)
+from
+(select s.hacker_id, s.challenge_id, max(score) max_score
+from submissions s
+group by s.hacker_id, s.challenge_id) as tmp
+join hackers h 
+on tmp.hacker_id = h.hacker_id
+group by tmp.hacker_id, h.name
+having sum(tmp.max_score) > 0
+order by 3 desc, 1 asc
+
+
+#====
+SQL Project Planning
+SET sql_mode = '';
+SELECT Start_Date, End_Date
+FROM 
+    (SELECT Start_Date FROM Projects WHERE Start_Date NOT IN (SELECT End_Date FROM Projects)) a,
+    (SELECT End_Date FROM Projects WHERE End_Date NOT IN (SELECT Start_Date FROM Projects)) b 
+WHERE Start_Date < End_Date
+GROUP BY Start_Date 
+ORDER BY DATEDIFF(End_Date, Start_Date), Start_Date
+
+
+#====
+Placements
+select Name from
+(select f.ID, f.Friend_ID, p1.Salary s1, p2.Salary s2, s.Name
+from friends f
+inner join packages p1
+on f.ID = p1.ID
+inner join packages p2
+on f.Friend_ID = p2.ID
+inner join students s
+on f.ID = s.ID
+where p2.Salary > p1.Salary
+order by s2) as tmp;
+
+
+#====
+Symmetric Pairs
+select distinct f1.x w, f1.y
+from functions f1, functions f2
+where f1.x = f2.y and f1.y = f2.x and f1.x < f2.x
+union 
+select f.x w, f.y
+from functions f
+where f.x = f.y
+group by f.x, f.y
+having count(*) >= 2
+order by w
+
+
+#====
+Print Prime Numbers
+select '2&3&5&7&11&13&17&19&23&29&31&37&41&43&47&53&59&61&67&
+71&73&79&83&89&97&101&103&107&109&113&127&131&137&139&149&151&
+157&163&167&173&179&181&191&193&197&199&211&223&227&229&233&239&
+241&251&257&263&269&271&277&281&283&293&307&311&313&317&331&337&
+347&349&353&359&367&373&379&383&389&397&401&409&419&421&431&433&
+439&443&449&457&461&463&467&479&487&491&499&503&509&521&523&541&
+547&557&563&569&571&577&587&593&599&601&607&613&617&619&631&641&
+643&647&653&659&661&673&677&683&691&701&709&719&727&733&739&743&
+751&757&761&769&773&787&797&809&811&821&823&827&829&839&853&857&
+859&863&877&881&883&887&907&911&919&929&937&941&947&953&967&971&
+977&983&991&997';
+
+
+
+
+
+

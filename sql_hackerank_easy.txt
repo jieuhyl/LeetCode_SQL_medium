@@ -1,0 +1,312 @@
+#====
+Revising the Select Query I
+select *
+from CITY
+where COUNTRYCODE = "USA" and POPULATION > 100000;
+
+
+#====
+Revising the Select Query II
+select NAME
+from CITY
+where COUNTRYCODE = 'USA' and POPULATION > 120000
+
+
+#====
+Select All
+select *
+from CITY
+
+
+#====
+Select By ID
+select *
+from CITY
+where ID = 1661;
+
+
+#====
+Japanese Cities' Attributes
+select *
+from CITY
+where COUNTRYCODE = "JPN"
+
+
+#====
+Japanese Cities' Names
+select NAME
+from CITY
+where COUNTRYCODE = "JPN"
+
+
+
+#====
+Weather Observation Station 1
+select CITY, STATE
+from STATION
+
+
+#====
+Weather Observation Station 3
+select distinct(CITY)
+from STATION
+where ID%2 = 0;
+
+
+#====
+Weather Observation Station 4
+SELECT COUNT(CITY) - COUNT(DISTINCT CITY) AS N FROM STATION
+
+
+#====
+Weather Observation Station 5
+select * 
+from
+(select CITY, length(CITY) as L_CITY
+from STATION
+group by CITY
+order by L_CITY asc, CITY asc
+limit 1) as tb1
+Union 
+select *
+from
+(select CITY, length(CITY) as L_CITY
+from STATION
+group by CITY
+order by L_CITY desc, CITY asc
+limit 1) as tb2;
+
+
+#====
+Weather Observation Station 6
+SELECT DISTINCT CITY 
+FROM STATION 
+WHERE LOWER(SUBSTR(CITY, 1, 1)) IN ('a','e','i','o','u');
+
+
+#====
+Weather Observation Station 7
+SELECT DISTINCT CITY 
+FROM STATION 
+WHERE LOWER(SUBSTR(CITY,-1)) IN ('a','e','i','o','u');
+
+
+#====
+Weather Observation Station 8
+select distinct city from station 
+where left(city,1) in ('a','e','i','o','u') 
+and right(city, 1) in ('a','e','i','o','u')
+
+
+#====
+Weather Observation Station 9
+select distinct city 
+from station 
+where left(city,1) not in ('a','e','i','o','u')
+
+
+#====
+Weather Observation Station 10
+select distinct city 
+from station 
+where right(city,1) not in ('a','e','i','o','u') 
+
+
+#====
+Weather Observation Station 11
+select distinct city 
+from station 
+where left(city,1) not in ('a','e','i','o','u')
+    or right(city,1) not in ('a','e','i','o','u');
+
+
+#====
+Weather Observation Station 12
+select distinct city 
+from station 
+where left(city,1) not in ('a','e','i','o','u')
+    and right(city,1) not in ('a','e','i','o','u');
+
+
+#====
+Higher Than 75 Marks
+select name
+from students
+where marks > 75
+order by right(name, 3) asc, id asc
+
+
+#====
+Employee Names
+select name
+from employee
+order by name asc;
+
+
+#====
+Employee Salaries
+select name
+from employee
+where months < 10 and salary > 2000
+order by employee_id;
+
+
+#====
+Type of Triangle
+select 
+ case when a+b>c and a+c>b and b+c>a then
+    case when a = b and b=c and  a=c then 'Equilateral'
+        when a=b or b=c or a=c then 'Isosceles'
+        else 'Scalene' end
+        else 'Not A Triangle' end
+from triangles;
+
+
+#====
+Revising Aggregations - The Count Function
+select count(distinct name)
+from city
+where population > 100000;
+
+
+#====
+Revising Aggregations - The Sum Function
+select sum(population)
+from city
+where district = 'California';
+
+
+#====
+Revising Aggregations - Averages
+select avg(population)
+from city 
+where district = 'California';
+
+#====
+Average Population
+select round(avg(population),0)
+from city;
+
+
+#====
+Japan Population
+select sum(population)
+from city
+where countrycode = 'JPN';
+
+
+#====
+Population Density Difference
+select max(population) - min(population)
+from city;
+
+
+#====
+The Blunder
+SELECT ceil((AVG(salary)) - (AVG(REPLACE(salary, '0', '')))) 
+FROM employees;
+
+
+#====
+Top Earners
+select max(salary * months), count(*) 
+from employee
+where (salary * months)=(select max(salary * months) from employee);
+
+
+#====
+Weather Observation Station 2
+select round(sum(lat_n),2) lat, round(sum(long_w),2) lon
+from station;
+
+
+#====
+Weather Observation Station 13
+select round(sum(lat_n), 4)
+from station
+where lat_n > 38.7880 and lat_n < 137.2345;
+
+
+#====
+Weather Observation Station 14
+select round(max(lat_n), 4)
+from station
+where lat_n < 137.2345;
+
+
+#====
+Weather Observation Station 15
+select round(long_w, 4)
+from station
+where round(lat_n, 4) = (select round(max(lat_n), 4)
+                from station
+                where lat_n < 137.2345);
+
+
+#====
+Weather Observation Station 16
+select round(min(lat_n), 4)
+from station
+where lat_n > 38.7780;
+
+
+#====
+Weather Observation Station 17
+select round(long_w, 4)
+from station
+where round(lat_n, 4) =(select round(min(lat_n), 4)
+from station
+where lat_n > 38.7780);
+
+
+#====
+Asian Population
+select sum(c.population)
+from city c
+left join country cc
+on c.COUNTRYCODE = cc.CODE
+where cc.CONTINENT = 'Asia';
+
+
+#====
+African Cities
+select distinct c.NAME
+from city c
+left join country cc
+on c.COUNTRYCODE = cc.CODE
+where cc.CONTINENT = 'Africa';
+
+
+#====
+Average Population of Each Continent
+select cc.CONTINENT, floor(avg(c.population))
+from city c
+inner join country cc
+on c.COUNTRYCODE = cc.CODE
+group by cc.CONTINENT;
+
+
+#====
+Draw The Triangle 1
+set @NUMBER:=21; 
+SELECT REPEAT('* ', @NUMBER := @NUMBER - 1) 
+FROM information_schema.tables;
+
+
+#====
+Draw The Triangle 2
+set @NUMBER:=0; 
+SELECT REPEAT('* ', @NUMBER := @NUMBER + 1) 
+FROM information_schema.tables
+limit 20;
+
+
+
+
+
+
+
+
+
+
+
