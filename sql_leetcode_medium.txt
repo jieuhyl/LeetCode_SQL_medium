@@ -542,3 +542,11 @@ select stock_name,
 from stocks
 group by stock_name
 order by 2 desc;
+
+
+#====
+1421. NPV Queries
+select q.*, coalesce(npv, 0) 'npv'
+from queries q
+left join npv n
+on q.id = n.id and q.year = n.year
