@@ -550,3 +550,19 @@ select q.*, coalesce(npv, 0) 'npv'
 from queries q
 left join npv n
 on q.id = n.id and q.year = n.year;
+
+
+#====
+1440. Evaluate Boolean Expression
+select e.left_operand, e.operator, e.right_operand,
+        case
+            when e.operator = '<' and v1.value < v2.value then 'true'
+            when e.operator = '=' and v1.value = v2.value then 'true'
+            when e.operator = '>' and v1.value > v2.value then 'true'
+            else 'false'
+        end 'value'     
+from expressions e
+join variables v1
+on e.left_operand = v1.name
+join variables v2
+on e.right_operand = v2.name;
