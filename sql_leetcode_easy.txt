@@ -119,15 +119,14 @@ having sum(price) = (select sum(price) s
 
 #====
 1327. List the Products Ordered in a Period
-select p.product_name, tmp.cnt as 'unit'
+select product_name, 
+       sum(unit) 'unit'
 from products p
-right join 
-(select product_id, sum(unit) cnt
-    from Orders
-    where order_date between '2020/02/01' and '2020/02/29'
-    group by product_id
-    having sum(unit) >= 100) as tmp
-on p.product_id = tmp.product_id;
+right join orders o
+on p.product_id = o.product_id
+where left(order_date, 7) = '2020-02'
+group by product_name
+having sum(unit) >= 100;
 
 
 #====
@@ -255,6 +254,15 @@ where
 free=1 and
 (seat_id+1 in (select seat_id from cinema where free=1)
 or seat_id-1 in (select seat_id from cinema where free=1))
+
+select seat_id
+from (select seat_id, free,
+      lag(free, 1) over(order by seat_id asc) as free_lag,   # lost first row
+      lead(free, 1) over(order by seat_id asc) as free_lead  # lost last row
+      from cinema) as tmp
+where (free = 1 and free_lag = 1) or (free = 1 and free_lead = 1)
+order by 1;
+
 
 
 #====
