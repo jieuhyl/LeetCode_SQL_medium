@@ -435,3 +435,13 @@ select name, unique_id
 from employees e
 left join employeeuni em
 on e.id = em.id;
+
+
+
+#====
+1495. Friendly Movies Streamed Last Month
+select distinct title
+from content c
+join tvprogram t
+on c.content_id = t.content_id
+where kids_content = 'Y' and content_type = 'Movies' and left(program_date, 7) = '2020-06';
