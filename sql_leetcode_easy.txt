@@ -481,3 +481,14 @@ UNION ALL
 SELECT '15 or more' AS bin,
        SUM(CASE WHEN mins>=15 THEN 1 ELSE 0 END) AS total
 FROM cte;
+
+
+
+#====
+1407. Top Travellers
+select name, coalesce(sum(distance), 0)'travelled_distance'
+from rides r
+right join users u
+on r.user_id = u.id
+group by 1
+order by 2 desc, 1 asc;
