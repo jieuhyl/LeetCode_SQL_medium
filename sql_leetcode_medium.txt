@@ -566,3 +566,13 @@ join variables v1
 on e.left_operand = v1.name
 join variables v2
 on e.right_operand = v2.name;
+
+
+
+#====
+1445. Apples & Oranges
+select sale_date,
+    sum(case when fruit = 'oranges' then sold_num*-1
+             else sold_num end) 'diff'
+from sales
+group by 1;
