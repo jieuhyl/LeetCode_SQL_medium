@@ -225,13 +225,11 @@ ORDER BY id asc;
 
 #====
 1158. Market Analysis I
-select buyer_id, join_date, 
-    sum(case when left(order_date, 4) = 2019 then 1 else 0 end) 'orders_in_2019'
-from orders as o
-join users as u
-on o.buyer_id = u.user_id
-#where left(order_date, 4) = 2019
-group by buyer_id;
+SELECT u.user_id AS buyer_id, join_date, COUNT(order_id) AS orders_in_2019 
+FROM Users as u
+LEFT JOIN Orders as o
+ON u.user_id = o.buyer_id and YEAR(order_date) = '2019'
+GROUP BY u.user_id;
 
 SELECT user_id AS buyer_id, join_date, COALESCE(COUNT(o.item_id),0) AS orders_in_2019
 FROM Users u
