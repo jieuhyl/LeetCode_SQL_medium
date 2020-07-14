@@ -148,6 +148,11 @@ WHERE user_id IN (
 
 #====
 570. Managers with at Least 5 Direct Reports
+select name
+from employee
+where id in (select managerid from employee group by managerid having count(distinct id) >= 5);
+
+
 select Name 
 from employee
 where Id in 
@@ -566,7 +571,6 @@ join variables v2
 on e.right_operand = v2.name;
 
 
-
 #====
 1445. Apples & Oranges
 select sale_date,
@@ -574,7 +578,6 @@ select sale_date,
              else sold_num end) 'diff'
 from sales
 group by 1;
-
 
 
 # ====
