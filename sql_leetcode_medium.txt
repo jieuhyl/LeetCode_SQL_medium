@@ -574,3 +574,20 @@ select sale_date,
              else sold_num end) 'diff'
 from sales
 group by 1;
+
+
+
+# ====
+1454. Active Users
+with cte as(
+    select a.id
+    from logins a,
+         logins b
+    where (datediff(a.login_date, b.login_date) between 0 and 4) and (a.id = b.id)
+    group by a.id, a.login_date
+    having count(distinct b.login_date) >= 5)
+
+select id, name
+from accounts
+where id in (select id from cte)
+order by 1 asc;
