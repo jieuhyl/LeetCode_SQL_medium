@@ -580,7 +580,7 @@ from sales
 group by 1;
 
 
-# ====
+#====
 1454. Active Users
 with cte as(
     select a.id
@@ -594,3 +594,28 @@ select id, name
 from accounts
 where id in (select id from cte)
 order by 1 asc;
+
+
+
+#====
+1501. Countries You Can Safely Invest In
+with cte as(
+    (select caller_id 'caller', duration, cy.name 'name'
+    from calls c
+    left join person p 
+    on c.caller_id = p.id
+    left join country cy
+    on left(p.phone_number, 3) = cy.country_code)
+    union all
+    (select callee_id 'caller', duration, cy.name 'name'
+    from calls c
+    left join person p 
+    on c.callee_id = p.id
+    left join country cy
+    on left(p.phone_number, 3) = cy.country_code))
+    
+select name 'country'
+from cte
+group by name
+having avg(duration) > (select avg(duration) from cte);
+
