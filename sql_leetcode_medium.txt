@@ -377,14 +377,14 @@ from (select player_id, min(event_date) 'first_login' from activity group by pla
 left join activity b
 on a.player_id = b.player_id and a.first_login + 1 = b.event_date
 
-with tmp as (
+with cte as (
 select a.player_id
 from (select player_id, min(event_date) 'first_login' from activity group by player_id) a,
      activity b
-where datediff(day, a.first_login, b.event_date) = 1 and a.player_id = b.player_id)
+where datediff(a.first_login, b.event_date) = -1 and a.player_id = b.player_id)
 
 select round(1.0*count(distinct player_id)/(select count(distinct player_id) from activity), 2) 'fraction'
-from tmp;
+from cte;
 
 
 #====
