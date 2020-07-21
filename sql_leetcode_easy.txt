@@ -502,3 +502,33 @@ right join users u
 on r.user_id = u.id
 group by 1
 order by 2 desc, 1 asc;
+
+
+
+#====
+1511. Customer Order Frequency
+select customer_id, name
+from customers
+where customer_id in (select customer_id
+                      from orders o 
+                      join product p
+                      on o.product_id = p.product_id
+                      where month(order_date) in (6)
+                      group by customer_id, month(order_date)
+                      having sum(price*quantity) >= 100) and
+      customer_id in
+                      (select customer_id
+                      from orders o 
+                      join product p
+                      on o.product_id = p.product_id
+                      where month(order_date) = 7
+                      group by customer_id
+                      having sum(price*quantity) >= 100);
+                      
+                      
+
+#====
+1517. Find Users With Valid E-Mails
+select *
+from users
+where regexp_like(mail, '^[a-zA-Z][a-zA-Z0-9\_\.\-]*@leetcode.com');
