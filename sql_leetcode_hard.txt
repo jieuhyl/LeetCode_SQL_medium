@@ -1,0 +1,389 @@
+#====
+262. Trips and Users
+with cte as(
+    select * 
+    from trips
+    where client_id not in (select users_id from users where banned = 'Yes') and
+          driver_id not in (select users_id from users where banned = 'Yes') and 
+    request_at between '2013-10-01' and '2013-10-03')
+    
+select request_at 'Day', 
+       round(count(case when status in ('cancelled_by_driver', 'cancelled_by_client') then 1
+                  else null end)/count(*), 2) 'cancellation Rate'
+from cte
+group by request_at;
+
+
+
+#====
+185. Department Top Three Salaries
+with cte as(
+    select *,
+            dense_rank() over(partition by departmentid order by salary desc) 'rnk'
+    from employee)
+
+select d.name 'Department', cte.name 'Employee', Salary
+from cte
+join department d
+on cte.departmentid = d.id
+where rnk < 4;
+
+
+
+#====
+601. Human Traffic of Stadium
+with cte as(
+    select id, visit_date,
+    lag(people, 2) over(order by id asc) 'lag2',
+    lag(people, 1) over(order by id asc) 'lag1',
+    people,
+    lead(people, 1) over(order by id asc) 'lead1',
+    lead(people, 2) over(order by id asc) 'lead2'
+    from stadium)
+
+select id, visit_date, people
+from cte
+where people >= 100 and ((lag2 >= 100 and lag1 >= 100) or (lag1 >= 100 and lead1 >= 100) or (lead1 >= 100 and lead2 >= 100));
+
+
+
+
+#====
+615. Average Salary: Departments VS Company
+with cte as(
+    select department_id, left(pay_date, 7) 'mth', amount,
+        avg(amount) over(partition by pay_date) 'com_amount',
+        avg(amount) over(partition by pay_date, department_id) 'dpt_amount'
+    from  salary s
+    join employee e
+    on s.employee_id = e.employee_id
+    )
+
+select distinct mth 'pay_month', department_id,
+       case when dpt_amount > com_amount then 'higher'
+            when dpt_amount < com_amount then 'lower'
+            else 'same' end 'comparison'
+from cte;
+
+
+
+#====
+1336. Number of Transactions per Visit
+with t as (select if(t.transaction_date is null, 0, count(*)) cnt
+           from visits v
+           left join transactions t
+           on v.user_id=t.user_id and v.visit_date=t.transaction_date
+           group by v.user_id, v.visit_date),
+     t1 as (select cnt, count(*) v_cnt
+            from t
+            group by cnt),
+     t2 as (select row_number() over() rn
+            from transactions
+            union
+            select 0 rn)
+
+select t2.rn transactions_count, ifnull(t1.v_cnt,0) visits_count
+from t2
+left join t1
+on t2.rn=t1.cnt
+where t2.rn <=(select max(cnt) from t1)
+order by t2.rn
+
+
+
+#====
+1127. User Purchase Platform
+SELECT 
+    p.spend_date,
+    p.platform,
+    IFNULL(SUM(amount), 0) total_amount,
+    COUNT(user_id) total_users
+FROM 
+(
+    SELECT DISTINCT(spend_date), 'desktop' platform FROM Spending
+    UNION
+    SELECT DISTINCT(spend_date), 'mobile' platform FROM Spending
+    UNION
+    SELECT DISTINCT(spend_date), 'both' platform FROM Spending
+) p 
+LEFT JOIN (
+    SELECT
+        spend_date,
+        user_id,
+        IF(mobile_amount > 0, IF(desktop_amount > 0, 'both', 'mobile'), 'desktop') platform,
+        (mobile_amount + desktop_amount) amount
+    FROM (
+        SELECT
+          spend_date,
+          user_id,
+          SUM(CASE platform WHEN 'mobile' THEN amount ELSE 0 END) mobile_amount,
+          SUM(CASE platform WHEN 'desktop' THEN amount ELSE 0 END) desktop_amount
+        FROM Spending
+        GROUP BY spend_date, user_id
+    ) o
+) t
+ON p.platform=t.platform AND p.spend_date=t.spend_date
+GROUP BY spend_date, platform
+
+
+
+#====
+569. Median Employee Salary
+with cte as(
+    select *, 
+    row_number() over(partition by Company order by Salary) 'rn',
+    count(Id) over(partition by Company) 'cnt'
+    from Employee
+)
+
+select Id, Company, Salary
+from cte
+where rn between cnt/2 and cnt/2+1;
+
+# get avg 
+#select Company, avg(Salary)
+#from cte
+#where rn between cnt/2 and cnt/2+1
+#group by Company;
+
+
+
+#====
+1412. Find the Quiet Students in All Exams
+with cte as(
+    select *,
+           max(score) over(partition by exam_id) 'high',
+           min(score) over(partition by exam_id) 'low'
+    from exam)
+
+select distinct cte.student_id, s.student_name
+from cte
+join student s
+on cte.student_id = s.student_id
+where cte.student_id not in (select student_id from cte
+                     where score = high or score = low);
+
+
+
+#====
+618. Students Report By Geography
+SELECT
+    MAX(CASE WHEN continent = 'America' THEN name ELSE Null END) AS America
+    , MAX(CASE WHEN continent = 'Asia' THEN name ELSE Null END) AS Asia
+    , MAX(CASE WHEN continent = 'Europe' THEN name ELSE Null END) AS Europe
+FROM (
+    SELECT
+        *
+        , ROW_NUMBER() OVER (PARTITION BY continent ORDER BY name) row_num
+    FROM student
+) T
+GROUP BY row_num;
+
+
+
+#====
+1225. Report Contiguous Dates
+with temp1 as(
+    select success_date ,
+    date_format(success_date,"%j")-row_number() over(order by success_date) as rn1
+    from Succeeded
+    where success_date between "2019-01-01" and "2019-12-31"),
+
+    temp2 as(
+    select fail_date ,
+    date_format(fail_date,"%j")-row_number() over(order by fail_date) as rn2
+    from Failed
+    where fail_date between "2019-01-01" and "2019-12-31")
+
+select "succeeded" as period_state,
+	min(success_date) as start_date, max(success_date) as end_date
+from temp1 
+group by rn1
+
+union
+
+select "failed" as period_state,
+	min(fail_date) as start_date, max(fail_date) as end_date
+from temp2 
+group by rn2
+order by start_date;
+
+
+
+#====
+1159. Market Analysis II
+with cte as(
+    select * 
+    from (
+        select seller_id, item_brand,
+               rank() over(partition by seller_id order by order_date) 'rn'
+        from orders o
+        join items i
+        on o.item_id = i.item_id) as tmp
+    where rn = 2)
+
+select user_id 'seller_id',
+        case when item_brand = favorite_brand then 'yes'
+        else 'no' end '2nd_item_fav_brand'
+from users u
+left join cte
+on u.user_id = cte.seller_id;
+
+
+
+
+#====
+579. Find Cumulative Salary of an Employee
+with cte as(
+	select *,
+		dense_rank()over(partition by id order by month desc) 'rnk'
+	from employee
+   )
+select Id, Month,
+	sum(salary)over(partition by id order by month rows between 2 preceding and 0 following) as Salary
+from cte
+where rnk != 1
+order by id asc, month desc;
+
+
+
+#====
+1479. Sales by Day of the Week
+select b.item_category as 'CATEGORY', 
+    sum(case when weekday(a.order_date) = 0 then a.quantity else 0 end) as 'MONDAY',
+    sum(case when weekday(a.order_date) = 1 then a.quantity else 0 end) as 'TUESDAY',
+    sum(case when weekday(a.order_date) = 2 then a.quantity else 0 end) as 'WEDNESDAY',
+    sum(case when weekday(a.order_date) = 3 then a.quantity else 0 end) as 'THURSDAY',
+    sum(case when weekday(a.order_date) = 4 then a.quantity else 0 end) as 'FRIDAY',
+    sum(case when weekday(a.order_date) = 5 then a.quantity else 0 end) as 'SATURDAY',
+    sum(case when weekday(a.order_date) = 6 then a.quantity else 0 end) as 'SUNDAY'
+from orders a 
+right join items b 
+on a.item_id = b.item_id
+group by b.item_category
+order by b.item_category;
+
+
+
+#====
+1384. Total Sales Amount by Year
+SELECT a.product_id, b.product_name, a.report_year, a.total_amount
+FROM (
+    SELECT product_id, '2018' AS report_year,
+        average_daily_sales * (DATEDIFF(LEAST(period_end, '2018-12-31'), GREATEST(period_start, '2018-01-01'))+1) AS total_amount
+    FROM Sales
+    WHERE YEAR(period_start)=2018 OR YEAR(period_end)=2018
+
+    UNION ALL
+
+    SELECT product_id, '2019' AS report_year,
+        average_daily_sales * (DATEDIFF(LEAST(period_end, '2019-12-31'), GREATEST(period_start, '2019-01-01'))+1) AS total_amount
+    FROM Sales
+    WHERE YEAR(period_start)<=2019 AND YEAR(period_end)>=2019
+
+    UNION ALL
+
+    SELECT product_id, '2020' AS report_year,
+        average_daily_sales * (DATEDIFF(LEAST(period_end, '2020-12-31'), GREATEST(period_start, '2020-01-01'))+1) AS total_amount
+    FROM Sales
+    WHERE YEAR(period_start)=2020 OR YEAR(period_end)=2020
+) a
+LEFT JOIN Product b
+ON a.product_id = b.product_id
+ORDER BY a.product_id, a.report_year;
+
+
+
+#====
+1369. Get the Second Most Recent Activity
+with cte1 as(
+    select *, 
+        rank() over(partition by username order by startdate desc) 'rnk'
+    from useractivity 
+    where username in
+            (
+            select username
+            from useractivity
+            group by username
+            having count(activity)>1
+            )
+        ),
+     cte2 as(
+    select *,
+         rank() over(partition by username order by startdate desc) 'rnk'
+    from useractivity
+    where username in
+        (
+        select username
+        from useractivity
+        group by username
+        having count(activity)=1
+        )
+    )
+select username, activity, startDate, endDate 
+from cte1
+where rnk = 2
+
+union
+
+select username, activity, startDate, endDate 
+from cte2
+where rnk = 1;
+
+
+
+#====
+1194. Tournament Winners
+with cte as(
+    select player, sum(score) as ind_score
+    from
+    (select first_player as player, first_score as score
+    from Matches 
+    union all
+    select second_player as player, second_score as score
+    from Matches) as m
+    group by player
+    ),
+
+    cte2 as(
+    select group_id, player, 
+        row_number() over(partition by group_id order by ind_score desc, player) 'rn'
+    from players 
+    left join cte 
+    on players.player_id = cte.player
+    )
+   
+select group_id, player 'player_id'
+from cte2
+where rn = 1;
+
+
+
+#====
+1097. Game Play Analysis V
+with cte as(
+    select player_id,  min(event_date) 'install_dt'
+    from activity
+    group by player_id)
+
+select install_dt, 
+       count(distinct cte.player_id) 'installs',
+       round(sum(case when datediff(event_date, install_dt) = 1 then 1 else 0 end)/count(distinct cte.player_id), 2) 'Day1_retention'
+from cte 
+join activity a
+on cte.player_id = a.player_id
+group by install_dt;
+
+
+
+#====
+571. Find Median Given Frequency of Numbers
+select  avg(n.Number) median
+from Numbers n
+where n.Frequency >= abs((select sum(Frequency) from Numbers where Number<=n.Number) -
+                         (select sum(Frequency) from Numbers where Number>=n.Number));
+
+
+
+
+
