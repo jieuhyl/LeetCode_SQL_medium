@@ -647,3 +647,17 @@ from points a,
 where a.id < b.id and a.x_value != b.x_value and a.y_value != b.y_value
 order by 3 desc, 1 asc, 2 asc;
 
+
+#====
+1532. The Most Recent Three Orders
+with cte as(
+    select *,
+        rank() over(partition by customer_id order by order_date desc) 'rnk'
+    from orders)
+
+select name 'customer_name', c.customer_id, order_id, order_date
+from customers c
+join cte
+on c.customer_id = cte.customer_id
+where rnk <= 3
+order by 1 asc, 2 asc, 4 desc;
