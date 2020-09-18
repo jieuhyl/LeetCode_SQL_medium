@@ -677,3 +677,23 @@ from cte
 where rnk = 1
 order by 1, 2, 3;
 
+
+#====
+1555. Bank Account Summary
+with cte as(
+    select user_id, credit
+    from users
+    union all
+    select paid_by 'user_id', amount*-1 'credit'
+    from transactions
+    union all
+    select paid_to 'user_id', amount 'credit'
+    from transactions
+    )
+
+select users.user_id, user_name, sum(cte.credit) 'credit',
+    (case when sum(cte.credit) >=0 then 'No' else 'Yes' end) 'credit_limit_breached'
+from users
+left join cte
+on users.user_id = cte.user_id
+group by user_id;
