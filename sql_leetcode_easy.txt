@@ -591,3 +591,9 @@ where invoice > 20
 group by left(order_date, 7);
 
 
+#====
+1607. Sellers With No Sales
+select seller_name
+from seller
+where seller_id not in (select distinct seller_id from orders where Year(sale_date) = 2020)
+order by 1 asc;
